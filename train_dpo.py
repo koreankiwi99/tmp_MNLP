@@ -49,6 +49,14 @@ def main():
                 "rejected": example["rejected"][1]["content"]     # assistant reply
             }
     
+    elif args.use_public == "Vezora/Code-Preference-Pairs":
+        def preprocess(example):
+            return {
+                "prompt": example["input"],        # user prompt
+                "chosen": example["accepted"],        # assistant reply
+                "rejected": example["rejected"]     # assistant reply
+            }
+    
     elif args.use_public == "openai/webgpt_comparisons":
         def preprocess(example):
             if example["score_0"] > example["score_1"]:
