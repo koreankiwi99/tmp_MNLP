@@ -43,12 +43,12 @@ def main():
     # Load model and reference model
     model = AutoModelForCausalLM.from_pretrained(
         base_model,
-        torch_dtype=torch.float16,
+        #torch_dtype=torch.float16,
         device_map="auto"
     )
     ref_model = AutoModelForCausalLM.from_pretrained(
         base_model,
-        torch_dtype=torch.float16,
+        #torch_dtype=torch.float16,
         device_map="auto"
     )
     
