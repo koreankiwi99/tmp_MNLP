@@ -57,6 +57,21 @@ def main():
                 "rejected": example["rejected"]     # assistant reply
             }
     
+    elif args.use_public == "stanfordnlp/SHP":
+        def preprocess(example):
+            if example['label'] == 1:
+                return {
+                    "prompt": example['history'],
+                    "chosen": example['human_ref_B'],
+                    "rejected": example['human_ref_A']
+                }
+            else:
+                return {
+                    "prompt": example['history'],
+                    "chosen": example['human_ref_A'],
+                    "rejected": example['human_ref_B']
+                }
+
     elif args.use_public == "openai/webgpt_comparisons":
         def preprocess(example):
             if example["score_0"] > example["score_1"]:
