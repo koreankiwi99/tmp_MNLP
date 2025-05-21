@@ -8,6 +8,7 @@ import random
 from ast import literal_eval
 from filter_stem_topic import filter_code_stem_dpo
 
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data_path", type=str, help="Path to custom DPO dataset (.jsonl)")
@@ -132,6 +133,9 @@ def main():
         }
 
     dataset = raw_dataset.map(preprocess, remove_columns=raw_dataset.column_names)
+    random_seed = 42
+    dataset = dataset.shuffle(seed=random_seed)
+
     print(dataset[0])
 
     if args.max_train_samples:
