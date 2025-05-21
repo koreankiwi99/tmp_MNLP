@@ -7,7 +7,7 @@ import torch
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data_path", type=str, required=True, help="Path to Qwen-formatted DPO dataset (.jsonl)")
+    parser.add_argument("--data_path", type=str, help="Path to custom DPO dataset (.jsonl)")
     parser.add_argument("--use_public", type=str, default=None,
                     help="Name of a public Hugging Face dataset to use (e.g., 'openbmb/UltraFeedback')")
     parser.add_argument("--hf_username", type=str, default="koreankiwi99", help="Hugging Face username")
