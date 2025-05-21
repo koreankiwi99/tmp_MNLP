@@ -40,11 +40,10 @@ def main():
     if args.use_public == "HuggingFaceH4/ultrafeedback_binarized":
         # special case: flatten chat messages
         def preprocess(example):
-            print(example["chosen"][0])
             return {
                 "prompt": example["prompt"],        # user prompt
-                "chosen": literal_eval(example["chosen"])[1]["content"],        # assistant reply
-                "rejected": literal_eval(example["rejected"])[1]["content"]     # assistant reply
+                "chosen": example["chosen"][1]["content"],        # assistant reply
+                "rejected": example["rejected"][1]["content"]     # assistant reply
             }
     else:
         # normal format (already strings)
