@@ -4,6 +4,7 @@ from datasets import load_dataset
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from trl import DPOTrainer, DPOConfig
 import torch
+from ast import literal_eval
 
 def main():
     parser = argparse.ArgumentParser()
@@ -41,8 +42,8 @@ def main():
         def preprocess(example):
             return {
                 "prompt": example["prompt"][0]["content"],        # user prompt
-                "chosen": example["chosen"][1]["content"],        # assistant reply
-                "rejected": example["rejected"][1]["content"]     # assistant reply
+                "chosen": literal_eval(example["chosen"])[1]["content"],        # assistant reply
+                "rejected": literal_eval(example["rejected"])[1]["content"]     # assistant reply
             }
     else:
         # normal format (already strings)
