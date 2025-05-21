@@ -4,6 +4,7 @@ from datasets import load_dataset
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from trl import DPOTrainer, DPOConfig
 import torch
+import random
 from ast import literal_eval
 
 def main():
@@ -21,9 +22,13 @@ def main():
         if args.use_public == "HuggingFaceH4/ultrafeedback_binarized":
             raw_dataset = load_dataset(args.use_public, split="train_prefs")  # or 'train' for full
         
-        elif args.use_public == "lvwerra/stack-exchange-paired":
-            raw_dataset = load_dataset("lvwerra/stack-exchange-paired")
-            raw_dataset = raw_dataset["train"]
+        elif args.use_public == "HuggingFaceH4/stack-exchange-preferences":
+            def has_enough_scored_answers(example):
+                scored = [a for a in example["answers"] if "pm_score" in a and isinstance(a["pm_score"], (int, float))]
+                return len(scored) >= 2
+            
+            raw_dataset = load_dataset(args.use_public, split="train")
+            raw_dataset = raw_dataset.filter(has_enough_scored_answers)
 
         else:
             raw_dataset = load_dataset(args.use_public, split="train")
@@ -76,12 +81,21 @@ def main():
                     "rejected": example['human_ref_B']
                 }
     
-    elif args.use_public == "lvwerra/stack-exchange-paired":
+    elif args.use_public == "HuggingFaceH4/stack-exchange-preferences":
         def preprocess(example):
+            question = example["question"]
+            scored = sorted(
+                [a for a in example["answers"] if "pm_score" in a],
+                key=lambda x: x["pm_score"],
+                reverse=True
+            )
+            chosen = scored[0]["text"]
+            rejected = random.choice(scored[1:])["text"]
+
             return {
-                "prompt": example["question"],
-                "chosen": example["response_j"],
-                "rejected": example["response_k"]
+                "prompt": question,
+                "chosen": chosen,
+                "rejected": rejected
             }
 
     elif args.use_public == "openai/webgpt_comparisons":
