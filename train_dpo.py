@@ -14,6 +14,8 @@ def main():
     parser.add_argument("--use_public", type=str, default=None,
                     help="Name of a public Hugging Face dataset to use")
     parser.add_argument("--hf_username", type=str, default="koreankiwi99", help="Hugging Face username")
+    parser.add_argument("--max_train_samples", type=int, default=None,
+                    help="If set, truncate the dataset to this number of samples.")
     args = parser.parse_args()
 
     # Derived names
@@ -54,12 +56,6 @@ def main():
         raw_dataset = load_dataset("json", data_files=args.data_path, split="train")
         dataset_name = os.path.splitext(os.path.basename(args.data_path))[0]
 
-    model_repo = f"{args.hf_username}/dpo_model_{dataset_name}_template"
-    output_dir = f"./{model_repo.replace('/', '_')}"
-
-    print(f"📘 Dataset: {dataset_name}")
-    print(f"✅ Loaded {len(raw_dataset)} examples")
-    print(f"🚀 Model will be pushed to: {model_repo}")
     
     if args.use_public == "HuggingFaceH4/ultrafeedback_binarized":
         # special case: flatten chat messages
@@ -138,11 +134,23 @@ def main():
     dataset = raw_dataset.map(preprocess, remove_columns=raw_dataset.column_names)
     print(dataset[0])
 
+    if args.max_train_samples:
+        dataset = dataset.select(range(min(len(dataset), args.max_train_samples)))
+        print(f"📉 Truncated dataset to {len(dataset)} samples")
+
+    dataset_size = len(dataset)
+    model_repo = f"{args.hf_username}/dpo_model_{dataset_name}_{dataset_size}"
+    output_dir = f"./{model_repo.replace('/', '_')}"
+
+    print(f"📘 Dataset: {dataset_name}")
+    print(f"✅ Loaded {dataset_size} examples")
+    print(f"🚀 Model will be pushed to: {model_repo}")
+
     # Load tokenizer
     base_model = "Qwen/Qwen3-0.6B-Base"
     tokenizer = AutoTokenizer.from_pretrained(base_model)
-    #tokenizer.pad_token = tokenizer.eos_token
-    #tokenizer.chat_template = None
+    tokenizer.pad_token = tokenizer.eos_token
+    tokenizer.chat_template = None
 
     # Load model and reference model
     model = AutoModelForCausalLM.from_pretrained(
@@ -162,7 +170,7 @@ def main():
         gradient_accumulation_steps=4,
         max_length=512,
         max_prompt_length=128,
-        num_train_epochs=3,
+        num_train_epochs=1,
         logging_steps=10,
         save_strategy="epoch",
         output_dir=output_dir,
