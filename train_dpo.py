@@ -10,7 +10,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data_path", type=str, help="Path to custom DPO dataset (.jsonl)")
     parser.add_argument("--use_public", type=str, default=None,
-                    help="Name of a public Hugging Face dataset to use (e.g., 'openbmb/UltraFeedback')")
+                    help="Name of a public Hugging Face dataset to use")
     parser.add_argument("--hf_username", type=str, default="koreankiwi99", help="Hugging Face username")
     args = parser.parse_args()
 
@@ -33,7 +33,7 @@ def main():
         raw_dataset = load_dataset("json", data_files=args.data_path, split="train")
         dataset_name = os.path.splitext(os.path.basename(args.data_path))[0]
 
-    model_repo = f"{args.hf_username}/dpo_model_{dataset_name}_revision"
+    model_repo = f"{args.hf_username}/dpo_model_{dataset_name}_template"
     output_dir = f"./{model_repo.replace('/', '_')}"
 
     print(f"📘 Dataset: {dataset_name}")
