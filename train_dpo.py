@@ -21,6 +21,9 @@ def main():
         if args.use_public == "HuggingFaceH4/ultrafeedback_binarized":
             raw_dataset = load_dataset(args.use_public, split="train_prefs")  # or 'train' for full
         
+        else:
+            raw_dataset = load_dataset(args.use_public, split="train")
+
         dataset_name = args.use_public.split("/")[-1]
     
     else:
@@ -45,6 +48,23 @@ def main():
                 "chosen": example["chosen"][1]["content"],        # assistant reply
                 "rejected": example["rejected"][1]["content"]     # assistant reply
             }
+    
+    elif args.use_public == "openai/webgpt_comparisons":
+        def process(example):
+            if example["score_0"] > example["score_1"]:
+                return {
+                    "prompt": example["question"]["full_text"],
+                    "chosen": example["answer_0"],
+                    "rejected": example["answer_1"],
+                }
+            else:
+                return {
+                    "prompt": example["question"]["full_text"],
+                    "chosen": example["answer_1"],
+                    "rejected": example["answer_0"],
+                }
+
+
     else:
         # normal format (already strings)
         def preprocess(example):
