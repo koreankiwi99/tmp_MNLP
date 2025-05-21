@@ -39,7 +39,7 @@ def main():
             raw_dataset = load_dataset(args.use_public, split="train").filter(is_valid_stem_example)
         
         elif args.use_public == "argilla/ultrafeedback-binarized-preferences-cleaned":
-            ds = load_dataset("argilla/ultrafeedback-binarized-preferences-cleaned", split="train")
+            ds = load_dataset(args.use_public, split="train")
             raw_dataset = filter_code_stem_dpo(ds)
 
         else:
