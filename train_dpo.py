@@ -59,7 +59,7 @@ def main():
     
     elif args.use_public == "stanfordnlp/SHP":
         def preprocess(example):
-            if example['label'] == 1:
+            if example['labels'] == 1:
                 return {
                     "prompt": example['history'],
                     "chosen": example['human_ref_B'],
