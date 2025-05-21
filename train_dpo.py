@@ -80,8 +80,8 @@ def main():
     # Load tokenizer
     base_model = "Qwen/Qwen3-0.6B-Base"
     tokenizer = AutoTokenizer.from_pretrained(base_model)
-    #tokenizer.pad_token = tokenizer.eos_token
-    #tokenizer.chat_template = None
+    tokenizer.pad_token = tokenizer.eos_token
+    tokenizer.chat_template = None
 
     # Load model and reference model
     model = AutoModelForCausalLM.from_pretrained(
