@@ -21,6 +21,10 @@ def main():
         if args.use_public == "HuggingFaceH4/ultrafeedback_binarized":
             raw_dataset = load_dataset(args.use_public, split="train_prefs")  # or 'train' for full
         
+        elif args.use_public == "lvwerra/stack-exchange-paired":
+            raw_dataset = load_dataset("lvwerra/stack-exchange-paired")
+            raw_dataset = raw_dataset["train"]
+
         else:
             raw_dataset = load_dataset(args.use_public, split="train")
 
