@@ -50,7 +50,7 @@ def main():
             }
     
     elif args.use_public == "openai/webgpt_comparisons":
-        def process(example):
+        def preprocess(example):
             if example["score_0"] > example["score_1"]:
                 return {
                     "prompt": example["question"]["full_text"],
