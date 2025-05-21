@@ -41,7 +41,7 @@ def main():
         # special case: flatten chat messages
         def preprocess(example):
             return {
-                "prompt": example["prompt"][0]["content"],        # user prompt
+                "prompt": example["prompt"],        # user prompt
                 "chosen": literal_eval(example["chosen"])[1]["content"],        # assistant reply
                 "rejected": literal_eval(example["rejected"])[1]["content"]     # assistant reply
             }
