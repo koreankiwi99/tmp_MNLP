@@ -16,7 +16,10 @@ def main():
     # Derived names
     if args.use_public:
         print(f"📂 Loading public dataset: {args.use_public}")
-        raw_dataset = load_dataset(args.use_public, split="train")  # or 'train' for full
+
+        if args.use_public == "HuggingFaceH4/ultrafeedback_binarized":
+            raw_dataset = load_dataset(args.use_public, split="train_prefs")  # or 'train' for full
+        
         dataset_name = args.use_public.split("/")[-1]
     
     else:
