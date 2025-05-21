@@ -71,6 +71,14 @@ def main():
                     "chosen": example['human_ref_A'],
                     "rejected": example['human_ref_B']
                 }
+    
+    elif args.use_public == "lvwerra/stack-exchange-paired":
+        def preprocess(example):
+            return {
+                "prompt": example["question"],
+                "chosen": example["response_j"],
+                "rejected": example["response_k"]
+            }
 
     elif args.use_public == "openai/webgpt_comparisons":
         def preprocess(example):
