@@ -42,12 +42,12 @@ def main():
     # Models
     model = AutoModelForCausalLM.from_pretrained(
         base_model,
-        torch_dtype=torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float32,
+        #torch_dtype=torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float32,
         device_map="auto"
     )
     ref_model = AutoModelForCausalLM.from_pretrained(
         base_model,
-        torch_dtype=torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float32,
+        #torch_dtype=torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float32,
         device_map="auto"
     )
 
@@ -65,7 +65,7 @@ def main():
         output_dir=output_dir,
         remove_unused_columns=True,  # ✅ Must be True with tokenizer
         fp16=False,
-        bf16=torch.cuda.is_bf16_supported(),  # ✅ Prefer bf16 if supported
+        bf16=False,#torch.cuda.is_bf16_supported(),  # ✅ Prefer bf16 if supported
         gradient_checkpointing=False,
         max_grad_norm=1.0,  # ✅ Prevent exploding gradients
     )

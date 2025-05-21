@@ -13,7 +13,7 @@ def main():
 
     # Derived names
     dataset_name = os.path.splitext(os.path.basename(args.data_path))[0]
-    model_repo = f"{args.hf_username}/dpo_model_{dataset_name}"
+    model_repo = f"{args.hf_username}/dpo_model_{dataset_name}_revision"
     output_dir = f"./{model_repo.replace('/', '_')}"
 
     print(f"📘 Dataset: {dataset_name}")
@@ -43,19 +43,19 @@ def main():
     # Load model and reference model
     model = AutoModelForCausalLM.from_pretrained(
         base_model,
-        #torch_dtype=torch.float16,
+        torch_dtype=torch.float16,
         device_map="auto"
     )
     ref_model = AutoModelForCausalLM.from_pretrained(
         base_model,
-        #torch_dtype=torch.float16,
+        torch_dtype=torch.float16,
         device_map="auto"
     )
     
     # DPO training configuration
     config = DPOConfig(
         beta=0.1,
-        learning_rate=1e-5,
+        learning_rate=5e-6, #1e-5,
         per_device_train_batch_size=2,  # reduce if OOM
         gradient_accumulation_steps=4,
         max_length=512,
@@ -65,9 +65,10 @@ def main():
         save_strategy="epoch",
         output_dir=output_dir,
         remove_unused_columns=False,
-        fp16=False,                      
+        fp16=True,                      
         bf16=False,                     
         gradient_checkpointing=False,
+        max_grad_norm=1.0,
     )
 
     # Use standard DPOTrainer constructor (NOT from_dataset)
