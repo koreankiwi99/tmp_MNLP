@@ -8,21 +8,31 @@ import torch
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data_path", type=str, required=True, help="Path to Qwen-formatted DPO dataset (.jsonl)")
+    parser.add_argument("--use_public", type=str, default=None,
+                    help="Name of a public Hugging Face dataset to use (e.g., 'openbmb/UltraFeedback')")
     parser.add_argument("--hf_username", type=str, default="koreankiwi99", help="Hugging Face username")
     args = parser.parse_args()
 
     # Derived names
-    dataset_name = os.path.splitext(os.path.basename(args.data_path))[0]
+    if args.use_public:
+        print(f"📂 Loading public dataset: {args.use_public}")
+        raw_dataset = load_dataset(args.use_public, split="train")  # or 'train' for full
+        dataset_name = args.use_public.split("/")[-1]
+    
+    else:
+        if args.data_path is None:
+            raise ValueError("You must provide --data_path if not using --use_public.")
+        print(f"📂 Loading local dataset: {args.data_path}")
+        raw_dataset = load_dataset("json", data_files=args.data_path, split="train")
+        dataset_name = os.path.splitext(os.path.basename(args.data_path))[0]
+
     model_repo = f"{args.hf_username}/dpo_model_{dataset_name}_revision"
     output_dir = f"./{model_repo.replace('/', '_')}"
 
     print(f"📘 Dataset: {dataset_name}")
-    print(f"🚀 Model will be pushed to: {model_repo}")
-
-    # Load dataset
-    raw_dataset = load_dataset("json", data_files=args.data_path, split="train")
     print(f"✅ Loaded {len(raw_dataset)} examples")
-
+    print(f"🚀 Model will be pushed to: {model_repo}")
+    
     # Preprocess dataset (keep only needed fields)
     def preprocess(example):
         return {
