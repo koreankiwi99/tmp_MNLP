@@ -36,12 +36,21 @@ def main():
     print(f"✅ Loaded {len(raw_dataset)} examples")
     print(f"🚀 Model will be pushed to: {model_repo}")
     
-    # Preprocess dataset (keep only needed fields)
-    def preprocess(example):
-        return {
-            "prompt": example["prompt"],
-            "chosen": example["chosen"],
-            "rejected": example["rejected"]
+    if args.use_public == "HuggingFaceH4/ultrafeedback_binarized":
+        # special case: flatten chat messages
+        def preprocess(example):
+            return {
+                "prompt": example["prompt"][0]["content"],        # user prompt
+                "chosen": example["chosen"][1]["content"],        # assistant reply
+                "rejected": example["rejected"][1]["content"]     # assistant reply
+            }
+    else:
+        # normal format (already strings)
+        def preprocess(example):
+            return {
+                "prompt": example["prompt"],
+                "chosen": example["chosen"],
+                "rejected": example["rejected"]
         }
 
     dataset = raw_dataset.map(preprocess, remove_columns=raw_dataset.column_names)
