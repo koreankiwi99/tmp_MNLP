@@ -6,6 +6,7 @@ from trl import DPOTrainer, DPOConfig
 import torch
 import random
 from ast import literal_eval
+from filter_stem_topic import filter_code_stem_dpo
 
 def main():
     parser = argparse.ArgumentParser()
@@ -23,12 +24,23 @@ def main():
             raw_dataset = load_dataset(args.use_public, split="train_prefs")  # or 'train' for full
         
         elif args.use_public == "HuggingFaceH4/stack-exchange-preferences":
-            def has_enough_scored_answers(example):
-                scored = [a for a in example["answers"] if "pm_score" in a and isinstance(a["pm_score"], (int, float))]
-                return len(scored) >= 2
-            
-            raw_dataset = load_dataset(args.use_public, split="train")
-            raw_dataset = raw_dataset.filter(has_enough_scored_answers)
+            from filter_stem_topic import is_code_stem_prompt
+
+            def is_valid_stem_example(example):
+                # Check: 2+ scored answers
+                scored_answers = [a for a in example["answers"] if "pm_score" in a and isinstance(a["pm_score"], (int, float))]
+                if len(scored_answers) < 2:
+                    return False
+
+                # Check: STEM-related prompt
+                return is_code_stem_prompt(example.get("question", ""))
+
+            # Load and filter in a single pass
+            raw_dataset = load_dataset(args.use_public, split="train").filter(is_valid_stem_example)
+        
+        elif args.use_public == "argilla/ultrafeedback-binarized-preferences-cleaned":
+            ds = load_dataset("argilla/ultrafeedback-binarized-preferences-cleaned", split="train")
+            raw_dataset = filter_code_stem_dpo(ds)
 
         else:
             raw_dataset = load_dataset(args.use_public, split="train")
