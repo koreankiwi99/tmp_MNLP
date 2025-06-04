@@ -1,30 +1,29 @@
 import argparse
 import os
 from datasets import load_dataset
-from transformers import AutoTokenizer, AutoModelForCausalLM, TrainingArguments, Trainer
+from transformers import AutoTokenizer, AutoModelForCausalLM, Trainer, TrainingArguments, DataCollatorForLanguageModeling
 from trl import DPOTrainer, DPOConfig
-import torch
 import random
 
-from filter_stem_topic import filter_code_stem_dpo
 
-def preprocess(example):
+def preprocess_dpo(example):
     return {
         "prompt": example["prompt"],
         "chosen": example["chosen"],
         "rejected": example["rejected"]
     }
 
-def convert_to_sft(example):
+def preprocess_sft(example):
     return {
         "prompt": example["prompt"],
-        "response": example["chosen"]
+        "output": example["chosen"]
     }
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data_path", type=str, help="Path to DPO dataset (.jsonl with prompt/chosen/rejected)")
-    parser.add_argument("--hf_username", type=str, default="koreankiwi99")
+    parser.add_argument("--hf_dataset", type=str, help="Name of the HF dataset (e.g. user/dataset)")
+    parser.add_argument("--hf_username", type=str, default="koreankiwi99", help="Hugging Face username")
+    parser.add_argument("--base_model", type=str, default="Qwen/Qwen3-0.6B-Base")
 
     # Training hyperparameters
     parser.add_argument("--num_train_epochs", type=int, default=3)
@@ -38,61 +37,62 @@ def main():
     parser.add_argument("--bf16", action="store_true")
     parser.add_argument("--gradient_checkpointing", action="store_true")
     parser.add_argument("--max_grad_norm", type=float, default=1.0)
-    
     args = parser.parse_args()
 
-    # Load dataset
-    raw_dataset = load_dataset("json", data_files=args.data_path, split="train")
-    dataset_name = os.path.splitext(os.path.basename(args.data_path))[0]
+    # Load and split dataset from Hugging Face Hub
+    print(f"📂 Loading dataset from HF: {args.hf_dataset}")
+    full_dataset = load_dataset(args.hf_dataset, split="train")
+    full_dataset = full_dataset.shuffle(seed=42)
+    split_data = full_dataset.train_test_split(test_size=0.3, seed=42)
+    sft_data = split_data["train"].map(preprocess_sft, remove_columns=full_dataset.column_names)
+    dpo_data = split_data["test"].map(preprocess_dpo, remove_columns=full_dataset.column_names)
 
-    # Shuffle and split into SFT and DPO subsets
-    raw_dataset = raw_dataset.shuffle(seed=42)
-    split = raw_dataset.train_test_split(test_size=0.3, seed=42)
-    sft_dataset = split["train"].map(convert_to_sft)
-    dpo_dataset = split["test"].map(preprocess, remove_columns=split["test"].column_names)
+    print(f"✅ SFT samples: {len(sft_data)} | DPO samples: {len(dpo_data)}")
 
-    # Load tokenizer and base model
-    base_model = "Qwen/Qwen3-0.6B-Base"
-    tokenizer = AutoTokenizer.from_pretrained(base_model)
+    # Load tokenizer and model
+    tokenizer = AutoTokenizer.from_pretrained(args.base_model)
     tokenizer.pad_token = tokenizer.eos_token
     tokenizer.chat_template = None
+    model = AutoModelForCausalLM.from_pretrained(args.base_model)
 
-    model = AutoModelForCausalLM.from_pretrained(base_model, device_map="auto")
+    ###### SFT Training ######
+    print("\n🚀 Starting SFT training...")
+    sft_model = model
+    sft_model.resize_token_embeddings(len(tokenizer))
 
-    # --- Step 1: Supervised Fine-Tuning ---
-    print("\n🔧 Starting SFT...")
-    sft_output_dir = f"sft_model_{dataset_name}"
-
-    sft_args = TrainingArguments(
-        output_dir=sft_output_dir,
+    training_args = TrainingArguments(
+        output_dir="./sft_output",
+        evaluation_strategy="no",
         per_device_train_batch_size=args.train_batch_size,
         gradient_accumulation_steps=args.gradient_accumulation_steps,
-        num_train_epochs=args.num_train_epochs,
         learning_rate=args.learning_rate,
+        num_train_epochs=args.num_train_epochs,
         logging_steps=10,
         save_strategy="epoch",
         fp16=args.fp16,
         bf16=args.bf16,
         gradient_checkpointing=args.gradient_checkpointing,
-        report_to="none",
+        max_grad_norm=args.max_grad_norm,
+        report_to="none"
     )
 
-    def sft_format(example):
-        return {
-            "input_ids": tokenizer(example["prompt"], truncation=True, max_length=args.max_prompt_length).input_ids,
-            "labels": tokenizer(example["response"], truncation=True, max_length=args.max_length).input_ids
-        }
+    def tokenize_sft(batch):
+        return tokenizer(batch["prompt"], text_target=batch["output"], padding="max_length", max_length=args.max_length, truncation=True)
 
-    tokenized_sft = sft_dataset.map(sft_format, remove_columns=sft_dataset.column_names)
-    trainer = Trainer(model=model, args=sft_args, train_dataset=tokenized_sft)
+    sft_data_tok = sft_data.map(tokenize_sft, batched=True)
+    trainer = Trainer(
+        model=sft_model,
+        args=training_args,
+        train_dataset=sft_data_tok,
+        tokenizer=tokenizer,
+        data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False)
+    )
     trainer.train()
 
-    # --- Step 2: DPO ---
-    print("\n🔥 Starting DPO...")
-    ref_model = AutoModelForCausalLM.from_pretrained(sft_output_dir, device_map="auto")
-
-    dpo_output_dir = f"dpo_model_{dataset_name}"
-    os.makedirs(dpo_output_dir, exist_ok=True)
+    ###### DPO Training ######
+    print("\n🔥 Starting DPO training...")
+    ref_model = AutoModelForCausalLM.from_pretrained(args.base_model, device_map="auto")
+    dpo_model = sft_model
 
     dpo_config = DPOConfig(
         beta=args.beta,
@@ -104,29 +104,31 @@ def main():
         num_train_epochs=args.num_train_epochs,
         logging_steps=10,
         save_strategy="epoch",
-        output_dir=dpo_output_dir,
+        output_dir="./dpo_output",
         remove_unused_columns=False,
         fp16=args.fp16,
         bf16=args.bf16,
         gradient_checkpointing=args.gradient_checkpointing,
-        max_grad_norm=args.max_grad_norm,
+        max_grad_norm=args.max_grad_norm
     )
 
     dpo_trainer = DPOTrainer(
-        model=model,
+        model=dpo_model,
         ref_model=ref_model,
         args=dpo_config,
-        train_dataset=dpo_dataset,
+        train_dataset=dpo_data,
         processing_class=tokenizer,
     )
 
     dpo_trainer.train()
 
-    # Push to hub
+    # Push final model
+    model_repo = f"{args.hf_username}/dpo_sft_model_{args.hf_dataset.split('/')[-1]}"
     print("\n📤 Pushing model to 🤗 Hub...")
-    model.push_to_hub(f"{args.hf_username}/{dpo_output_dir}")
-    tokenizer.push_to_hub(f"{args.hf_username}/{dpo_output_dir}")
+    dpo_trainer.model.push_to_hub(model_repo)
+    tokenizer.push_to_hub(model_repo)
     print("✅ Done!")
+
 
 if __name__ == "__main__":
     main()
