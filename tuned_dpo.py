@@ -147,7 +147,7 @@ def main():
         print(f"📉 Truncated dataset to {len(dataset)} samples")
 
     dataset_size = len(dataset)
-    model_repo = f"{args.hf_username}/dpo_model_{dataset_name}_{dataset_size}"
+    model_repo = f"{args.hf_username}/dpo_model_{dataset_name}_{dataset_size}_tuned"
     output_dir = f"./{model_repo.replace('/', '_')}"
     os.makedirs(output_dir, exist_ok=True)
 
