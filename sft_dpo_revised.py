@@ -13,7 +13,6 @@ from transformers import (
 )
 from trl import DPOTrainer, DPOConfig
 
-
 def preprocess_dpo(example):
     return {
         "prompt": example["prompt"],
