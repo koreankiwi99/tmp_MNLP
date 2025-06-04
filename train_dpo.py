@@ -34,7 +34,8 @@ def main():
         config_dict = json.load(f)
 
     # Set output directory and model repo
-    model_repo = f"{args.hf_username}/dpo_model_{dataset_name}"
+    config_name = args.config_path.split('/')[-1]
+    model_repo = f"{args.hf_username}/dpo_model_{config_name}"
     output_dir = f"./{model_repo.replace('/', '_')}"
     config_dict["output_dir"] = output_dir
     config_dict["push_to_hub_model_id"] = model_repo
