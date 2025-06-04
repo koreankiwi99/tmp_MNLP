@@ -55,7 +55,7 @@ def main():
         ref_model=ref_model,
         args=config,
         train_dataset=dataset,
-        tokenizer=tokenizer
+        processing_class=tokenizer
     )
 
     # Train the model
