@@ -22,7 +22,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config_path", type=str, required=True, help="Path to SFT config JSON file")
     parser.add_argument("--sft_dataset_name", type=str, required=True, help="Hugging Face dataset name (instruction-output format)")
-    parser.add_argument("--model_name", type=str, default="Qwen/Qwen1.5-1.8B-Base", help="Base model name or path")
+    parser.add_argument("--model_name", type=str, default="Qwen/Qwen3-0.6B-Base", help="Base model name or path")
     parser.add_argument("--hf_username", type=str, default="koreankiwi99", help="Hugging Face username")
     args = parser.parse_args()
 
