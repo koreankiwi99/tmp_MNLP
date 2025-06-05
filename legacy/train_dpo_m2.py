@@ -6,7 +6,7 @@ from trl import DPOTrainer, DPOConfig
 import torch
 import random
 from ast import literal_eval
-from filter_stem_topic import filter_code_stem_dpo
+from ./filter_stem_topic import filter_code_stem_dpo
 
 
 def main():
