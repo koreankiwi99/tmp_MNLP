@@ -4,7 +4,7 @@ import json
 from datasets import load_dataset
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from trl import DPOTrainer, DPOConfig
-from huggingface_hub import HfApi, Repository
+from huggingface_hub import HfApi, create_repo
 
 
 def preprocess(example):
@@ -62,19 +62,23 @@ def main():
     # Train the model
     trainer.train()
 
-    # Save and push model, tokenizer, and config
-    print("📤 Pushing model and config to 🤗 Hub...")
+    # Save model and config
+    print("📤 Saving model and config...")
     model.save_pretrained(output_dir)
     tokenizer.save_pretrained(output_dir)
-
     with open(os.path.join(output_dir, "dpo_config.json"), "w") as f:
         json.dump(config_dict, f, indent=2)
 
-    # Initialize and push to the hub (avoiding clone_from error)
-    repo = Repository(local_dir=output_dir)
-    repo.git_init()
-    repo.create_remote(repo_url=f"https://huggingface.co/{model_repo}")
-    repo.push_to_hub()
+    # Create repo and upload
+    print(f"🚀 Uploading to Hub: {model_repo}")
+    api = HfApi()
+    create_repo(repo_id=model_repo, repo_type="model", exist_ok=True)
+    api.upload_folder(
+        repo_id=model_repo,
+        folder_path=output_dir,
+        repo_type="model"
+    )
+
 
 if __name__ == "__main__":
     main()
