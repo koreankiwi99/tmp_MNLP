@@ -1,7 +1,15 @@
+import random
 from datasets import load_dataset, Dataset
-from huggingface_hub import HfApi
-from tqdm import tqdm
 
+MATH_SUBJECTS = [
+    "algebra",
+    "geometry",
+    "number_theory",
+    "counting_and_probability",
+    "prealgebra",
+    "precalculus",
+    "intermediate_algebra"
+]
 
 def format_dataset_dpo_style(dataset, dataset_name):
     formatted = []
@@ -18,17 +26,19 @@ def format_dataset_dpo_style(dataset, dataset_name):
         for ex in dataset:
             q = ex["question_stem"]
             choices = ex["choices"]["text"]
-            ans = choices[ord(ex["answerKey"]) - ord("A")]
-            formatted.append({
-                "instruction": f"{q} Choices: {', '.join(choices)}",
-                "output": ans,
-                "dataset": dataset_name
-            })
+            if "answerKey" in ex:
+                ans = choices[ord(ex["answerKey"]) - ord("A")]
+                instruction = f"{q} Here are the options: {', '.join(choices)}. Which one is correct?"
+                formatted.append({
+                    "instruction": instruction,
+                    "output": ans,
+                    "dataset": dataset_name
+                })
 
-    elif dataset_name == "hendrycks_math_algebra":
+    elif dataset_name.startswith("hendrycks_math_"):
         for ex in dataset:
             formatted.append({
-                "instruction": ex["problem"],
+                "instruction": f"Solve this math problem:\n\n{ex['problem']}",
                 "output": ex["solution"],
                 "dataset": dataset_name
             })
@@ -36,114 +46,95 @@ def format_dataset_dpo_style(dataset, dataset_name):
     elif dataset_name == "mbpp":
         for ex in dataset:
             formatted.append({
-                "instruction": ex["text"],
+                "instruction": f"Write a Python function that does the following:\n\n{ex['text']}",
                 "output": ex["code"],
                 "dataset": dataset_name
             })
 
-    elif dataset_name == "code_contests":
-        for ex in dataset:
-            formatted.append({
-                "instruction": ex["prompt"],
-                "output": ex["canonical_solution"],
-                "dataset": dataset_name
-            })
-
-    elif dataset_name == "proofwriter_depth_3":
-        for ex in dataset:
-            formatted.append({
-                "instruction": ex["question"],
-                "output": ex["proof"],
-                "dataset": dataset_name
-            })
-
-    elif dataset_name == "pubmedqa":
-        for ex in dataset:
-            if ex["final_decision"] in ["yes", "no", "maybe"]:
-                formatted.append({
-                    "instruction": f"{ex['question']}\n\n{ex['context']}",
-                    "output": ex["final_decision"],
-                    "dataset": dataset_name
-                })
-
     elif dataset_name == "MathInstruct":
         for ex in dataset:
             formatted.append({
-                "instruction": ex["instruction"],
-                "output": ex["output"],
+                "instruction": ex["instruction"].strip(),
+                "output": ex["output"].strip(),
                 "dataset": dataset_name
             })
 
-    elif dataset_name == "OpenMathInstruct-1":
-        for ex in dataset:
-            formatted.append({
-                "instruction": ex["question"],
-                "output": ex["answer"],
-                "dataset": dataset_name
-            })
+    return formatted
 
-    return Dataset.from_list(formatted)
+# Dataset combinations
+COMBOS = {
+    "balanced": {
+        "sciq": ("sciq", None, 10000),
+        "openbookqa_main": ("openbookqa", "main", 10000),
+        "mbpp": ("mbpp", None, 10000),
+        "hendrycks_math_all": ("EleutherAI/hendrycks_math", None, 14000),  # 2k x 7
+        "MathInstruct": ("TIGER-Lab/MathInstruct", None, 20000),
+    },
+    "math_only": {
+        "hendrycks_math_all": ("EleutherAI/hendrycks_math", None, 14000),
+        "MathInstruct": ("TIGER-Lab/MathInstruct", None, 20000),
+    },
+    "code_only": {
+        "mbpp": ("mbpp", None, 15000),
+    },
+    "lightweight": {
+        "sciq": ("sciq", None, 5000),
+        "mbpp": ("mbpp", None, 5000),
+        "MathInstruct": ("TIGER-Lab/MathInstruct", None, 10000),
+    },
+    "reasoning": {
+        "openbookqa_main": ("openbookqa", "main", 10000),
+        "sciq": ("sciq", None, 10000),
+    }
+}
 
+def load_hendrycks_all(target_size):
+    total = []
+    per_subject = target_size // len(MATH_SUBJECTS)
+    for subject in MATH_SUBJECTS:
+        print(f"📦 Loading hendrycks_math ({subject}) ...")
+        raw = load_dataset("EleutherAI/hendrycks_math", subject, split="train")
+        formatted = format_dataset_dpo_style(raw, f"hendrycks_math_{subject}")
+        if len(formatted) > per_subject:
+            formatted = random.sample(formatted, per_subject)
+        total.extend(formatted)
+    return total
 
-def build_combo(combo_id):
-    sources = []
+def build_combo(combo_name):
+    assert combo_name in COMBOS, f"Invalid combo name: {combo_name}"
+    sources = COMBOS[combo_name]
+    all_data = []
 
-    if combo_id == "1":  # balanced
-        sources = [
-            ("sciq", "train"),
-            ("openbookqa", "main", "train"),
-            ("mbpp", "train"),
-            ("deepmind/code_contests", "train"),
-            ("proofwriter", "depth_3", "train"),
-            ("hendrycks_math", "algebra", "train"),
-            ("TIGER-Lab", "MathInstruct", "train"),
-            ("nvidia", "OpenMathInstruct-1", "train")
-        ]
-
-    elif combo_id == "2":  # code-focused
-        sources = [
-            ("mbpp", "train"),
-            ("deepmind/code_contests", "train")
-        ]
-
-    elif combo_id == "3":  # logic + math
-        sources = [
-            ("sciq", "train"),
-            ("proofwriter", "depth_3", "train"),
-            ("hendrycks_math", "algebra", "train"),
-            ("TIGER-Lab", "MathInstruct", "train")
-        ]
-
-    elif combo_id == "4":  # lightweight mix
-        sources = [
-            ("sciq", "train"),
-            ("mbpp", "train")
-        ]
-
-    datasets = []
-    for s in sources:
-        if len(s) == 2:
-            name, split = s
-            ds = load_dataset(name, split=split)
-            ds_name = name.split("/")[-1]
+    for ds_key, (path, subset, target_size) in sources.items():
+        if ds_key == "hendrycks_math_all":
+            all_data.extend(load_hendrycks_all(target_size))
         else:
-            name, subset, split = s
-            ds = load_dataset(name, subset, split=split)
-            ds_name = subset
-        datasets.append(format_dataset_dpo_style(ds, ds_name))
+            print(f"\n📦 Loading {ds_key} ...")
+            raw = load_dataset(path, subset, split="train")
+            formatted = format_dataset_dpo_style(raw, ds_key)
+            print(f"✅ Formatted: {len(formatted)}")
 
-    return Dataset.concatenate(*datasets)
+            if len(formatted) > target_size:
+                formatted = random.sample(formatted, target_size)
 
+            all_data.extend(formatted)
+
+    return Dataset.from_list(all_data)
+
+def push_dataset(dataset, repo_id: str):
+    print(f"\n🚀 Pushing dataset to: https://huggingface.co/datasets/{repo_id}")
+    dataset.push_to_hub(repo_id)
+    print("✅ Upload complete!")
 
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--combo", type=str, default="1")
-    parser.add_argument("--repo_id", type=str, default="koreankiwi99/mnlp_sft_combo")
+    parser.add_argument("--combo", type=str, default="balanced", choices=COMBOS.keys())
+    parser.add_argument("--repo_id", type=str, default='koreankiwi99/mnlp_stem', help="HuggingFace dataset repo ID (e.g. username/sft-stem-v1)")
     args = parser.parse_args()
 
-    repo_id = f'{args.repo_id}_{args.combo}'
-    print(f"🚀 Building combo {args.combo} ...")
-    final_ds = build_combo(args.combo)
-    final_ds.push_to_hub(repo_id)
-    print(f"✅ Pushed to HuggingFace Hub → https://huggingface.co/datasets/{repo_id}")
+    print(f"🔧 Building '{args.combo}' SFT dataset ...")
+    ds = build_combo(args.combo)
+    print(f"📊 Final dataset size: {len(ds)} examples")
+
+    push_dataset(ds, f'{args.repo_id}_{args.combo}')
