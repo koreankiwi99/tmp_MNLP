@@ -25,7 +25,9 @@ def main():
 
         if args.use_public == "nvidia/HelpSteer3":
             dataset_all = load_dataset("nvidia/HelpSteer3")
+            print(dataset_all)
             raw_dataset = dataset_all["preference"]
+    
             #raw_dataset = load_dataset(args.use_public, split="preference")
             dataset_name = "HelpSteer3"
 
