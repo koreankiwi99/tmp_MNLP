@@ -24,7 +24,6 @@ def main():
     args = parser.parse_args()
 
     # Load and preprocess dataset
-    dataset_name = args.hf_dataset_name.split("/")[-1]
     print(f"📂 Loading dataset: {args.hf_dataset_name}")
     dataset = load_dataset(args.hf_dataset_name, split="train")
     dataset = dataset.map(preprocess, remove_columns=dataset.column_names).shuffle(seed=42)
@@ -34,7 +33,7 @@ def main():
         config_dict = json.load(f)
 
     # Set output directory and model repo
-    config_name = args.config_path.split('/')[-1]
+    config_name = args.config_path.split('/')[-1].replace('.json', '')
     model_repo = f"{args.hf_username}/dpo_model_{config_name}"
     output_dir = f"./{model_repo.replace('/', '_')}"
     config_dict["output_dir"] = output_dir
@@ -64,15 +63,18 @@ def main():
 
     # Save and push model, tokenizer, and config
     print("📤 Pushing model and config to 🤗 Hub...")
-    model.push_to_hub(model_repo)
-    tokenizer.push_to_hub(model_repo)
+    # Save model and tokenizer (includes proper config.json)
+    model.save_pretrained(output_dir)
+    tokenizer.save_pretrained(output_dir)
 
-    config_path = os.path.join(output_dir, "config.json")
-    with open(config_path, "w") as f:
+    # Save DPO config separately
+    with open(os.path.join(output_dir, "dpo_config.json"), "w") as f:
         json.dump(config_dict, f, indent=2)
 
-    HfApi().upload_folder(folder_path=output_dir, repo_id=model_repo, repo_type="model")
-    print(f"✅ All artifacts pushed to: https://huggingface.co/{model_repo}")
+    # Push everything to the Hub
+    from huggingface_hub import Repository
+    repo = Repository(local_dir=output_dir, clone_from=model_repo, repo_type="model")
+    repo.push_to_hub()
 
 
 if __name__ == "__main__":

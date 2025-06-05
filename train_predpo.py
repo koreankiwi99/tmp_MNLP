@@ -20,8 +20,8 @@ def main():
     parser.add_argument("--config_path", type=str, required=True, help="Path to DPO config JSON file")
     parser.add_argument("--hf_dataset_name", type=str, required=True, help="Hugging Face dataset name (e.g. HuggingFaceH4/ultrafeedback_binarized)")
     parser.add_argument("--model_name", type=str, default="Qwen/Qwen3-0.6B-Base", help="Base model name or path")
-    parser.add_argument("--hf_username", type=str, default="koreankiwi99", help="Hugging Face username")
     parser.add_argument("--ref_model_path", type=str, required=True, help="Path or repo of the trained DPO model to use as reference")
+    parser.add_argument("--hf_username", type=str, default="koreankiwi99", help="Hugging Face username")
     args = parser.parse_args()
 
     # Load and preprocess dataset
@@ -35,7 +35,8 @@ def main():
         config_dict = json.load(f)
 
     # Set output directory and model repo
-    model_repo = f"{args.hf_username}/predpo_model_{dataset_name}"
+    config_name = args.config_path.split('/')[-1]
+    model_repo = f"{args.hf_username}/predpo_model_{config_name}"
     output_dir = f"./{model_repo.replace('/', '_')}"
     config_dict["output_dir"] = output_dir
     config_dict["push_to_hub_model_id"] = model_repo
