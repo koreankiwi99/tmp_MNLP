@@ -9,5 +9,5 @@
     "save_strategy": "no",
     "logging_steps": 10,
     "fp16": true,
-    "max_length": 2048
+    "max_length": 1024
   }
