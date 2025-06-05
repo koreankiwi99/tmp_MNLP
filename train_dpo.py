@@ -25,6 +25,7 @@ def main():
 
     # Load and preprocess dataset
     print(f"📂 Loading dataset: {args.hf_dataset_name}")
+    dataset_name = args.hf_dataset_name.split('/')[-1]
     dataset = load_dataset(args.hf_dataset_name, split="train")
     dataset = dataset.map(preprocess, remove_columns=dataset.column_names).shuffle(seed=42)
 
@@ -34,7 +35,7 @@ def main():
 
     # Set output directory and model repo
     config_name = args.config_path.split('/')[-1].replace('.json', '')
-    model_repo = f"{args.hf_username}/dpo_model_{config_name}"
+    model_repo = f"{args.hf_username}/dpo_model_{config_name}_{dataset_name}"
     output_dir = f"./{model_repo.replace('/', '_')}"
     config_dict["output_dir"] = output_dir
     config_dict["push_to_hub_model_id"] = model_repo

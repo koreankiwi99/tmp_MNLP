@@ -2,6 +2,7 @@ from datasets import load_dataset, Dataset
 from huggingface_hub import HfApi
 from tqdm import tqdm
 
+
 def format_dataset_dpo_style(dataset, dataset_name):
     formatted = []
 
@@ -13,7 +14,7 @@ def format_dataset_dpo_style(dataset, dataset_name):
                 "dataset": dataset_name
             })
 
-    elif dataset_name == "openbookqa":
+    elif dataset_name == "openbookqa_main":
         for ex in dataset:
             q = ex["question_stem"]
             choices = ex["choices"]["text"]
@@ -40,7 +41,7 @@ def format_dataset_dpo_style(dataset, dataset_name):
                 "dataset": dataset_name
             })
 
-    elif dataset_name == "humaneval":
+    elif dataset_name == "code_contests":
         for ex in dataset:
             formatted.append({
                 "instruction": ex["prompt"],
@@ -48,7 +49,7 @@ def format_dataset_dpo_style(dataset, dataset_name):
                 "dataset": dataset_name
             })
 
-    elif dataset_name == "proofwriter_depth3":
+    elif dataset_name == "proofwriter_depth_3":
         for ex in dataset:
             formatted.append({
                 "instruction": ex["question"],
@@ -65,7 +66,24 @@ def format_dataset_dpo_style(dataset, dataset_name):
                     "dataset": dataset_name
                 })
 
+    elif dataset_name == "MathInstruct":
+        for ex in dataset:
+            formatted.append({
+                "instruction": ex["instruction"],
+                "output": ex["output"],
+                "dataset": dataset_name
+            })
+
+    elif dataset_name == "OpenMathInstruct-1":
+        for ex in dataset:
+            formatted.append({
+                "instruction": ex["question"],
+                "output": ex["answer"],
+                "dataset": dataset_name
+            })
+
     return Dataset.from_list(formatted)
+
 
 def build_combo(combo_id):
     sources = []
@@ -75,34 +93,57 @@ def build_combo(combo_id):
             ("sciq", "train"),
             ("openbookqa", "main", "train"),
             ("mbpp", "train"),
-            (""openai_humaneval"", "test"),
-            ("proofwriter", "depth_3", "validation"),
-            ("hendrycks_math", "algebra", "test")
+            ("deepmind/code_contests", "train"),
+            ("proofwriter", "depth_3", "train"),
+            ("hendrycks_math", "algebra", "train"),
+            ("TIGER-Lab", "MathInstruct", "train"),
+            ("nvidia", "OpenMathInstruct-1", "train")
         ]
 
-    # Extend combos 2/3/4 if needed
+    elif combo_id == "2":  # code-focused
+        sources = [
+            ("mbpp", "train"),
+            ("deepmind/code_contests", "train")
+        ]
+
+    elif combo_id == "3":  # logic + math
+        sources = [
+            ("sciq", "train"),
+            ("proofwriter", "depth_3", "train"),
+            ("hendrycks_math", "algebra", "train"),
+            ("TIGER-Lab", "MathInstruct", "train")
+        ]
+
+    elif combo_id == "4":  # lightweight mix
+        sources = [
+            ("sciq", "train"),
+            ("mbpp", "train")
+        ]
 
     datasets = []
     for s in sources:
         if len(s) == 2:
             name, split = s
             ds = load_dataset(name, split=split)
+            ds_name = name.split("/")[-1]
         else:
             name, subset, split = s
             ds = load_dataset(name, subset, split=split)
-            name = f"{name}_{subset}"
-        datasets.append(format_dataset_dpo_style(ds, name))
+            ds_name = subset
+        datasets.append(format_dataset_dpo_style(ds, ds_name))
 
     return Dataset.concatenate(*datasets)
+
 
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--combo", type=str, default="1")
-    parser.add_argument("--repo_id", type=str, default="koreankiwi99/mnlp_sft_combo1")
+    parser.add_argument("--repo_id", type=str, default="koreankiwi99/mnlp_sft_combo")
     args = parser.parse_args()
 
+    repo_id = f'{args.repo_id}_{args.combo}'
     print(f"🚀 Building combo {args.combo} ...")
     final_ds = build_combo(args.combo)
-    final_ds.push_to_hub(args.repo_id)
-    print(f"✅ Pushed to HuggingFace Hub → https://huggingface.co/datasets/{args.repo_id}")
+    final_ds.push_to_hub(repo_id)
+    print(f"✅ Pushed to HuggingFace Hub → https://huggingface.co/datasets/{repo_id}")
