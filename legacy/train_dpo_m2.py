@@ -24,7 +24,9 @@ def main():
         print(f"📂 Loading public dataset: {args.use_public}")
 
         if args.use_public == "nvidia/HelpSteer3":
-            raw_dataset = load_dataset(args.use_public, split="preference")
+            dataset_all = load_dataset("nvidia/HelpSteer3")
+            raw_dataset = dataset_all["preference"]
+            #raw_dataset = load_dataset(args.use_public, split="preference")
             dataset_name = "HelpSteer3"
 
             if args.only_singleturn:
