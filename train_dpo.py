@@ -35,7 +35,7 @@ def main():
 
     # Set output directory and model repo
     config_name = args.config_path.split('/')[-1].replace('.json', '')
-    model_name = args.model_name if args.model_name != 'Qwen/Qwen3-0.6B-Base' else 'dpo_model'
+    model_name = args.model_name.split('/')[-1] if args.model_name != 'Qwen/Qwen3-0.6B-Base' else 'dpo_model'
     model_repo = f"{args.hf_username}/{model_name}_{config_name}_{dataset_name}"
     output_dir = f"./{model_repo.replace('/', '_')}"
     config_dict["output_dir"] = output_dir
