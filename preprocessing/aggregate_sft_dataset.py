@@ -74,6 +74,20 @@ COMBOS = {
         "hendrycks_math_all": ("EleutherAI/hendrycks_math", None, 14000),
         "MathInstruct": ("TIGER-Lab/MathInstruct", None, 20000),
     },
+    "balanced_plus": {
+    "sciq": ("sciq", None, 8000),
+    "openbookqa_main": ("openbookqa", "main", 8000),
+    "mbpp": ("mbpp", None, 12000),
+    "MathInstruct": ("TIGER-Lab/MathInstruct", None, 20000),
+    "hendrycks_math_all": ("EleutherAI/hendrycks_math", None, 20000),
+    },
+    "curriculum": {
+    "sciq": ("sciq", None, 4000),
+    "mbpp": ("mbpp", None, 4000),
+    "openbookqa_main": ("openbookqa", "main", 4000),
+    "MathInstruct": ("TIGER-Lab/MathInstruct", None, 16000),
+    "hendrycks_math_all": ("EleutherAI/hendrycks_math", None, 12000),
+    },
     "code_only": {
         "mbpp": ("mbpp", None, 15000),
     },
