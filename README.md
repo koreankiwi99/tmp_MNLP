@@ -41,32 +41,31 @@ Install dependencies:
 ```bash
 pip install transformers peft trl accelerate
 ````
+### 🔧 Run SFT Training
+
+```bash
+python train_sft.py \
+  --config_path <path_to_config_json>         # e.g., MNLP/config/sft_base.json \
+  --sft_dataset_name <sft_dataset_name>       # e.g., koreankiwi99/mnlp_stem_curriculum
+```
 
 ### 🔧 Run DPO Training
 
 ```bash
 python train_dpo.py \
-  --config_path MNLP/config/lower_beta.json \
-  --hf_dataset_name koreankiwi99/mnlp_aggregate \
-  --model_name koreankiwi99/sft_model_sft_base_mnlp_stem_balanced_plus
+  --config_path <path_to_config_json>         # e.g., MNLP/config/lower_beta.json \
+  --hf_dataset_name <dataset_name>            # e.g., koreankiwi99/mnlp_aggregate \
+  --model_name <base_or_sft_model>            # e.g., koreankiwi99/sft_model_sft_base_mnlp_stem_balanced_plus
 ```
 
 ### 🔧 Run Pre-DPO Preference Model Training
 
 ```bash
 python train_predpo.py \
-  --config_path MNLP/config/predpo_lower_beta.json \
-  --hf_dataset_name koreankiwi99/mnlp_aggregate \
-  --model_name koreankiwi99/sft_model_sft_base_mnlp_stem_balanced \
-  --ref_model_name koreankiwi99/sft_model_sft_base_mnlp_stem_balanced_lower_beta_mnlp_aggregate
-```
-
-### 🔧 Run SFT Training
-
-```bash
-python train_sft.py \
-  --config_path MNLP/config/sft_base.json \
-  --sft_dataset_name koreankiwi99/mnlp_stem_curriculum
+  --config_path <path_to_config_json>         # e.g., MNLP/config/predpo_lower_beta.json \
+  --hf_dataset_name <dataset_name>            # e.g., koreankiwi99/mnlp_aggregate \
+  --model_name <base_or_sft_model>            # e.g., koreankiwi99/sft_model_sft_base_mnlp_stem_balanced \
+  --ref_model_name <dpo_or_simpo_model>       # e.g., koreankiwi99/sft_model_sft_base_mnlp_stem_balanced_lower_beta_mnlp_aggregate
 ```
 
 ---
