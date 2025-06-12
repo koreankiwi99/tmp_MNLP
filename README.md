@@ -4,7 +4,7 @@ This repository contains my personal work on **Direct Preference Optimization (D
 
 [![Course](https://img.shields.io/badge/EPFL-CS552-red)](https://github.com/cs-552)
 
-📄 **[FINALREPORT.pdf](FINALREPORT.pdf)** – Revised version of the final report (uploaded here for portfolio reference only; the original was submitted through the team repo before the deadline).  
+📄 **[FINALREPORT.pdf](FINALREPORT.pdf)** – Revised version of the final report (Revised independently to better reflect my contributions — shared here for archival purposes only.)
 📝 **[proposal.pdf](proposal.pdf)** – Initial project proposal outlining the goals, plan, and methodology.  
 📈 **[progress_report.pdf](progress_report.pdf)** – Mid-project progress report describing partial results and individual contributions.
 
