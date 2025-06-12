@@ -1,7 +1,8 @@
 # DPO – CS552 Modern NLP (Spring 2025, EPFL)
 
 This repository contains my personal work on **Direct Preference Optimization (DPO)** for the final project in **Modern Natural Language Processing (CS552)** at **EPFL**, Spring 2025.
-> 🏫 Developed as part of [EPFL CS552 – Modern Natural Language Processing (Spring 2025)](https://github.com/cs-552)
+
+[![Course](https://img.shields.io/badge/EPFL-CS552-red)](https://github.com/cs-552)
 
 📄 **[FINALREPORT.pdf](FINALREPORT.pdf)** – Revised version of the final report (uploaded here for portfolio reference only; the original was submitted through the team repo before the deadline).  
 📝 **[proposal.pdf](proposal.pdf)** – Initial project proposal outlining the goals, plan, and methodology.  
