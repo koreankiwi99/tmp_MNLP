@@ -23,35 +23,78 @@ This repo includes:
 ## 🤗 Hugging Face Collections
 
 - **Milestone 3 – Trained DPO Models**  
-  🔗 https://huggingface.co/collections/koreankiwi99/2025-mnlp-m3-dpo-6847624db5964ddef0fb0b4b
+  👉 [View Collection on Hugging Face](https://huggingface.co/collections/koreankiwi99/2025-mnlp-m3-dpo-6847624db5964ddef0fb0b4b)
 
 - **Evaluation Dataset (LightEval-compatible)**  
-  🔗 https://huggingface.co/collections/koreankiwi99/epfl-lighteval-dpo-datasets-68474bc94137e41ade8e560f
+  👉 [View Dataset Collection](https://huggingface.co/collections/koreankiwi99/epfl-lighteval-dpo-datasets-68474bc94137e41ade8e560f)  
+  ↪ Compatible with [**LightEval**](https://github.com/eric11eca/lighteval-epfl-mnlp)
 
 - **Milestone 2 – Baseline Models**  
-  🔗 https://huggingface.co/collections/koreankiwi99/2025-mnlp-m2-dpo-68357712650d51732ca5e7c5
+  👉 [View Baseline Models](https://huggingface.co/collections/koreankiwi99/2025-mnlp-m2-dpo-68357712650d51732ca5e7c5)
+
+---
+
+## 🚀 Quick Start (Training Scripts)
+
+Install dependencies:
+
+```bash
+pip install transformers peft trl accelerate
+````
+
+### 🔧 Run DPO Training
+
+```bash
+python train_dpo.py \
+  --config_path MNLP/config/lower_beta.json \
+  --hf_dataset_name koreankiwi99/mnlp_aggregate \
+  --model_name koreankiwi99/sft_model_sft_base_mnlp_stem_balanced_plus
+```
+
+### 🔧 Run Pre-DPO Preference Model Training
+
+```bash
+python train_predpo.py \
+  --config_path MNLP/config/predpo_lower_beta.json \
+  --hf_dataset_name koreankiwi99/mnlp_aggregate \
+  --model_name koreankiwi99/sft_model_sft_base_mnlp_stem_balanced \
+  --ref_model_name koreankiwi99/sft_model_sft_base_mnlp_stem_balanced_lower_beta_mnlp_aggregate
+```
+
+### 🔧 Run SFT Training
+
+```bash
+python train_sft.py \
+  --config_path MNLP/config/sft_base.json \
+  --sft_dataset_name koreankiwi99/mnlp_stem_curriculum
+```
 
 ---
 
 ## 📁 Repo Structure
 
 ```
-
 .
-├── MNLP/
-│   ├── config/
-│   ├── data/
-│   ├── evaluation/
-│   ├── legacy/
-│   ├── preprocessing/
-│   ├── check\_overlap.py
-│   └── dataset\_stats.py
-├── train\_dpo.py
-├── train\_predpo.py
-├── train\_sft.py
+├── config/              # Training configs
+├── data/                # Subsets of EPFL Dataset
+├── evaluation/          # Convert public benchmark to LightEval format
+├── legacy/              # Deprecated or testing code
+├── preprocessing/       # Combining SFT datasets
+├── check_overlap.py     # Utility for overlap analysis
+├── dataset_stats.py     # Dataset statistics and diagnostics
+├── train_dpo.py         # Main DPO training script
+├── train_predpo.py      # Pre-DPO preference modeling
+├── train_sft.py         # Supervised fine-tuning script
 ├── FINALREPORT.pdf
 ├── proposal.pdf
-├── progress\_report.pdf
+├── progress_report.pdf
 └── README.md
-
 ```
+
+---
+
+## 👩🏻‍💻 About
+
+**Kyuhee Kim**
+Master’s in Data Science @ EPFL
+🌐 [GitHub](https://github.com/koreankiwi99) | 🤗 [Hugging Face](https://huggingface.co/koreankiwi99)
