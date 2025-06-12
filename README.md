@@ -55,11 +55,3 @@ This repo includes:
 └── README.md
 
 ```
-
----
-
-## 👩🏻‍💻 About
-
-**Kyuhee Kim**  
-Master’s in Data Science @ EPFL  
----
